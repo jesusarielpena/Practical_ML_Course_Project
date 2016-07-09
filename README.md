@@ -1,1 +1,195 @@
 # Practical_ML_Course_Project
+
+Practical Machine Learning Course Project
+Jesus Ariel Pena
+
+July 8, 2016
+
+Background
+Using devices such as Jawbone Up, Nike FuelBand, and Fitbit it is now possible to collect a large amount of data about personal activity relatively inexpensively. These type of devices are part of the quantified self movement - a group of enthusiasts who take measurements about themselves regularly to improve their health, to find patterns in their behavior, or because they are tech geeks. One thing that people regularly do is quantify how much of a particular activity they do, but they rarely quantify how well they do it. In this project, your goal will be to use data from accelerometers on the belt, forearm, arm, and dumbell of 6 participants. They were asked to perform barbell lifts correctly and incorrectly in 5 different ways. More information is available from the website here: http://groupware.les.inf.puc-rio.br/har (see the section on the Weight Lifting Exercise Dataset).
+
+Data
+The training data for this project are available here:
+
+https://d396qusza40orc.cloudfront.net/predmachlearn/pml-training.csv
+
+The test data are available here:
+
+https://d396qusza40orc.cloudfront.net/predmachlearn/pml-testing.csv
+
+The data for this project come from this source: http://groupware.les.inf.puc-rio.br/har. If you use the document you create for this class for any purpose please cite them as they have been very generous in allowing their data to be used for this kind of assignment.
+
+Project Objectives
+The goal of your project is to predict the manner in which they did the exercise. This is the “classe” variable in the training set. You may use any of the other variables to predict with. You should create a report describing how you built your model, how you used cross validation, what you think the expected out of sample error is, and why you made the choices you did. You will also use your prediction model to predict 20 different test cases.
+
+Reproduceablity
+The following section includes the different libraries that need to be loaded and the seed set in order to the project to be reproduceable.
+
+library(caret)
+## Loading required package: lattice
+## Loading required package: ggplot2
+library(rpart)
+library(rpart.plot)
+library(RColorBrewer)
+library(rattle)
+## Rattle: A free graphical interface for data mining with R.
+## Version 4.1.0 Copyright (c) 2006-2015 Togaware Pty Ltd.
+## Type 'rattle()' to shake, rattle, and roll your data.
+library(randomForest)
+## randomForest 4.6-12
+## Type rfNews() to see new features/changes/bug fixes.
+## 
+## Attaching package: 'randomForest'
+## The following object is masked from 'package:ggplot2':
+## 
+##     margin
+library(e1071)
+set.seed(12345)
+Getting the data
+First storage the two dataset in different variables, Train and Test and clean the data by omitting NA values.
+
+trainUrl <- "http://d396qusza40orc.cloudfront.net/predmachlearn/pml-training.csv"
+testUrl <- "http://d396qusza40orc.cloudfront.net/predmachlearn/pml-testing.csv"
+
+training <- read.csv(url(trainUrl), na.strings=c("NA","#DIV/0!",""))
+testing <- read.csv(url(testUrl), na.strings=c("NA","#DIV/0!",""))
+
+dim(training)
+## [1] 19622   160
+dim(testing)
+## [1]  20 160
+##The training dataset contains 19622 observations and 160 variables, the testing dataset contains 20 observations and 160 variables
+training<-training[,colSums(is.na(training)) == 0]
+testing <-testing[,colSums(is.na(testing)) == 0]
+
+## the first columns are not usuable for this project so will be removed 
+
+training   <-training[,-c(1:7)]
+testing <-testing[,-c(1:7)]
+Cross Validation
+Now the cross validation will be perfomed splitting the data into 70% for the training and 20% for the testing.
+
+The method to use is =Random Forest due to its higly accuracy rate. Additionally the cross validation is used as train control with 5-folds as the parameter number.
+
+subSamples <- createDataPartition(y=training$classe, p=0.7, list=FALSE)
+subTraining <- training[subSamples, ] 
+subTesting <- training[-subSamples, ]
+
+model1 <- trainControl(method = "cv", number = 5, verboseIter=FALSE , preProcOptions="pca", allowParallel=TRUE)
+
+
+##Start with a Random Forest 
+
+rf <- train(classe ~ ., data = subTraining, method = "rf", trControl= model1, ntree=200)
+
+rf
+## Random Forest 
+## 
+## 13737 samples
+##    52 predictor
+##     5 classes: 'A', 'B', 'C', 'D', 'E' 
+## 
+## No pre-processing
+## Resampling: Cross-Validated (5 fold) 
+## Summary of sample sizes: 10989, 10990, 10990, 10989, 10990 
+## Resampling results across tuning parameters:
+## 
+##   mtry  Accuracy   Kappa    
+##    2    0.9914828  0.9892251
+##   27    0.9895902  0.9868312
+##   52    0.9861687  0.9825022
+## 
+## Accuracy was used to select the optimal model using  the largest value.
+## The final value used for the model was mtry = 2.
+# Evaluate the performance of the model with a confusion matrix function and with the estimated accuracy.
+predictions <- predict(rf, newdata=subTesting)
+confusionMatrix(subTesting$classe, predictions)
+## Confusion Matrix and Statistics
+## 
+##           Reference
+## Prediction    A    B    C    D    E
+##          A 1672    2    0    0    0
+##          B   13 1121    5    0    0
+##          C    0   17 1006    3    0
+##          D    0    0   23  941    0
+##          E    0    0    0    3 1079
+## 
+## Overall Statistics
+##                                           
+##                Accuracy : 0.9888          
+##                  95% CI : (0.9858, 0.9913)
+##     No Information Rate : 0.2863          
+##     P-Value [Acc > NIR] : < 2.2e-16       
+##                                           
+##                   Kappa : 0.9858          
+##  Mcnemar's Test P-Value : NA              
+## 
+## Statistics by Class:
+## 
+##                      Class: A Class: B Class: C Class: D Class: E
+## Sensitivity            0.9923   0.9833   0.9729   0.9937   1.0000
+## Specificity            0.9995   0.9962   0.9959   0.9953   0.9994
+## Pos Pred Value         0.9988   0.9842   0.9805   0.9761   0.9972
+## Neg Pred Value         0.9969   0.9960   0.9942   0.9988   1.0000
+## Prevalence             0.2863   0.1937   0.1757   0.1609   0.1833
+## Detection Rate         0.2841   0.1905   0.1709   0.1599   0.1833
+## Detection Prevalence   0.2845   0.1935   0.1743   0.1638   0.1839
+## Balanced Accuracy      0.9959   0.9898   0.9844   0.9945   0.9997
+accuracy <- postResample(predictions, subTesting$classe)
+accuracy
+##  Accuracy     Kappa 
+## 0.9887850 0.9858104
+Next the decision tree is applied and a graph is provided and the corresponding confusionMatrix
+
+# First we need to fit the model , the subTraining dataset is used
+
+modFit <- rpart(classe ~ ., data=subTraining, method="class")
+
+# Next we need to perform the prediction
+decisiontree <- predict(modFit, subTesting, type = "class")
+
+# Now a plot showing the classifcation tree is provided.
+
+rpart.plot(modFit, main="Classification Tree", extra=102, under=TRUE, faclen=0)
+
+
+#Finally evaluate the performance of the model by creating a confusion matrix function.
+confusionMatrix(decisiontree, subTesting$classe)
+## Confusion Matrix and Statistics
+## 
+##           Reference
+## Prediction    A    B    C    D    E
+##          A 1498  196   69  106   25
+##          B   42  669   85   86   92
+##          C   43  136  739  129  131
+##          D   33   85   98  553   44
+##          E   58   53   35   90  790
+## 
+## Overall Statistics
+##                                           
+##                Accuracy : 0.722           
+##                  95% CI : (0.7104, 0.7334)
+##     No Information Rate : 0.2845          
+##     P-Value [Acc > NIR] : < 2.2e-16       
+##                                           
+##                   Kappa : 0.6467          
+##  Mcnemar's Test P-Value : < 2.2e-16       
+## 
+## Statistics by Class:
+## 
+##                      Class: A Class: B Class: C Class: D Class: E
+## Sensitivity            0.8949   0.5874   0.7203  0.57365   0.7301
+## Specificity            0.9060   0.9357   0.9097  0.94717   0.9509
+## Pos Pred Value         0.7909   0.6869   0.6273  0.68020   0.7700
+## Neg Pred Value         0.9559   0.9043   0.9390  0.91897   0.9399
+## Prevalence             0.2845   0.1935   0.1743  0.16381   0.1839
+## Detection Rate         0.2545   0.1137   0.1256  0.09397   0.1342
+## Detection Prevalence   0.3218   0.1655   0.2002  0.13815   0.1743
+## Balanced Accuracy      0.9004   0.7615   0.8150  0.76041   0.8405
+#Finally predict the model using the testing dataset 
+last_result <- predict(rf, testing)
+last_result
+##  [1] B A B A A E D B A A B C B A E E A B B B
+## Levels: A B C D E
+Conclusion
+As previously shown in the analysis the Random Forest method provides the better accuracy
