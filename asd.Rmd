@@ -169,6 +169,7 @@ decisiontree <- predict(modFit, subTesting, type = "class")
 
 rpart.plot(modFit, main="Classification Tree", extra=102, under=TRUE, faclen=0)
 
+![decision_tree](https://cloud.githubusercontent.com/assets/8090890/16705322/57a4fc34-454b-11e6-8434-1cf1fbcf0c6b.jpeg)
 
 #Finally evaluate the performance of the model by creating a confusion matrix function.
 confusionMatrix(decisiontree, subTesting$classe)
