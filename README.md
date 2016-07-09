@@ -33,11 +33,23 @@ The following section includes the different libraries that need to be loaded an
 
 ```{r}
 library(caret)
+## Loading required package: lattice
+## Loading required package: ggplot2
 library(rpart)
 library(rpart.plot)
 library(RColorBrewer)
 library(rattle)
+## Rattle: A free graphical interface for data mining with R.
+## Version 4.1.0 Copyright (c) 2006-2015 Togaware Pty Ltd.
+## Type 'rattle()' to shake, rattle, and roll your data.
 library(randomForest)
+## randomForest 4.6-12
+## Type rfNews() to see new features/changes/bug fixes.
+## 
+## Attaching package: 'randomForest'
+## The following object is masked from 'package:ggplot2':
+## 
+##     margin
 library(e1071)
 set.seed(12345)
 ```
